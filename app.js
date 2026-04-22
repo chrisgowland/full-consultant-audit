@@ -113,6 +113,7 @@ function render() {
   if (activeTab === 'summary') { renderSummary(records); renderSummaryStats(records); }
   if (activeTab === 'nh') { renderNH(records); renderNHStats(records); }
   if (activeTab === 'bupa') { renderBUPA(records); renderBUPAStats(records); }
+  updateStickyOffsets();
 }
 
 function badge(val, trueLabel = '✓', falseLabel = '✗') {
@@ -348,6 +349,13 @@ function renderBUPAStats(records) {
     statBox('Avg plain English', `${avgPE}/10`, `of ${found.toLocaleString()} found`);
 }
 
+/* ── sticky offset — stat boxes live inside .table-wrap so same scroll context ── */
+function updateStickyOffsets() {
+  const statsEl = document.getElementById(`stats-${activeTab}`);
+  const h = statsEl ? statsEl.offsetHeight : 0;
+  document.querySelectorAll('thead th').forEach(th => { th.style.top = h + 'px'; });
+}
+
 /* ── tab switching ── */
 function switchTab(tab) {
   activeTab = tab;
@@ -356,8 +364,6 @@ function switchTab(tab) {
     document.getElementById(`table-${t}`).style.display = t === tab ? '' : 'none';
     const tf = document.getElementById(`tab-filters-${t}`);
     if (tf) tf.style.display = t === tab ? '' : 'none';
-    const sb = document.getElementById(`stats-${t}`);
-    if (sb) sb.style.display = t === tab ? '' : 'none';
   });
   render();
 }
