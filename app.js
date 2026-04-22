@@ -113,7 +113,6 @@ function render() {
   if (activeTab === 'summary') { renderSummary(records); renderSummaryStats(records); }
   if (activeTab === 'nh') { renderNH(records); renderNHStats(records); }
   if (activeTab === 'bupa') { renderBUPA(records); renderBUPAStats(records); }
-  updateStickyOffsets();
 }
 
 function badge(val, trueLabel = '✓', falseLabel = '✗') {
@@ -347,13 +346,6 @@ function renderBUPAStats(records) {
     statBox('NH Consultant Link', bc('nuffieldConsultantLink').toLocaleString(), `${pct(bc('nuffieldConsultantLink'), found)} of found`) +
     statBox('Anaesthetists', bc('anaesthetists').toLocaleString(), `${pct(bc('anaesthetists'), found)} of found`) +
     statBox('Avg plain English', `${avgPE}/10`, `of ${found.toLocaleString()} found`);
-}
-
-/* ── sticky offsets ── */
-function updateStickyOffsets() {
-  const statsEl = document.getElementById(`stats-${activeTab}`);
-  const h = statsEl ? statsEl.offsetHeight : 0;
-  document.querySelectorAll('thead th').forEach(th => { th.style.top = h + 'px'; });
 }
 
 /* ── tab switching ── */
