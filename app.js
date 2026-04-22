@@ -180,8 +180,8 @@ function renderSummaryStats(records) {
 
   document.getElementById('stats-summary').innerHTML =
     statBox('Consultants', total.toLocaleString(), '') +
-    statBox('Nuffield Health pass', nhPass.toLocaleString(), `${pct(nhPass, total)} of ${total.toLocaleString()}`) +
-    statBox('BUPA pass (≥ 7/9)', bupaPass.toLocaleString(), `${pct(bupaPass, bupaFound)} of ${bupaFound.toLocaleString()} found`);
+    statBox('Nuffield Health pass', pct(nhPass, total), `${nhPass.toLocaleString()} of ${total.toLocaleString()}`) +
+    statBox('BUPA pass (≥ 7/9)', pct(bupaPass, bupaFound), `${bupaPass.toLocaleString()} of ${bupaFound.toLocaleString()} found`);
 }
 
 function renderSummary(records) {
@@ -311,18 +311,18 @@ function renderNHStats(records) {
     : '–';
 
   document.getElementById('stats-nh').innerHTML =
-    statBox('Overall pass', pass.toLocaleString(), `${pct(pass, total)} of ${total.toLocaleString()}`) +
-    statBox('Photo', c('photoPass').toLocaleString(), pct(c('photoPass'), total)) +
-    statBox('Clinical Terms', c('clinicalTermsPass').toLocaleString(), pct(c('clinicalTermsPass'), total)) +
-    statBox('Specialty', c('specialtyPass').toLocaleString(), pct(c('specialtyPass'), total)) +
-    statBox('Procedures', c('proceduresPass').toLocaleString(), pct(c('proceduresPass'), total)) +
-    statBox('Insurers', c('insurersPass').toLocaleString(), pct(c('insurersPass'), total)) +
-    statBox('Qualifications', c('qualificationsPass').toLocaleString(), pct(c('qualificationsPass'), total)) +
-    statBox('GMC Number', c('gmcPass').toLocaleString(), pct(c('gmcPass'), total)) +
-    statBox('Book Online', c('bookOnlinePass').toLocaleString(), pct(c('bookOnlinePass'), total)) +
-    statBox('In booking system', withBooking.toLocaleString(), pct(withBooking, total)) +
-    statBox('No appts in 7 days', noAppts7d.toLocaleString(), `${pct(noAppts7d, withBooking)} of bookable`) +
-    statBox('< 12 appts (4 wk)', under12.toLocaleString(), `${pct(under12, withBooking)} of bookable`) +
+    statBox('Overall pass', pct(pass, total), `${pass.toLocaleString()} of ${total.toLocaleString()}`) +
+    statBox('Photo', pct(c('photoPass'), total), c('photoPass').toLocaleString()) +
+    statBox('Clinical Terms', pct(c('clinicalTermsPass'), total), c('clinicalTermsPass').toLocaleString()) +
+    statBox('Specialty', pct(c('specialtyPass'), total), c('specialtyPass').toLocaleString()) +
+    statBox('Procedures', pct(c('proceduresPass'), total), c('proceduresPass').toLocaleString()) +
+    statBox('Insurers', pct(c('insurersPass'), total), c('insurersPass').toLocaleString()) +
+    statBox('Qualifications', pct(c('qualificationsPass'), total), c('qualificationsPass').toLocaleString()) +
+    statBox('GMC Number', pct(c('gmcPass'), total), c('gmcPass').toLocaleString()) +
+    statBox('Book Online', pct(c('bookOnlinePass'), total), c('bookOnlinePass').toLocaleString()) +
+    statBox('In booking system', pct(withBooking, total), withBooking.toLocaleString()) +
+    statBox('No appts in 7 days', pct(noAppts7d, withBooking), `${noAppts7d.toLocaleString()} of bookable`) +
+    statBox('< 12 appts (4 wk)', pct(under12, withBooking), `${under12.toLocaleString()} of bookable`) +
     statBox('Avg plain English', `${avgPE}/5`, `of ${total.toLocaleString()}`);
 }
 
@@ -336,16 +336,16 @@ function renderBUPAStats(records) {
     : '–';
 
   document.getElementById('stats-bupa').innerHTML =
-    statBox('Found on BUPA', found.toLocaleString(), `${pct(found, total)} of ${total.toLocaleString()}`) +
-    statBox('Photo', bc('photo').toLocaleString(), `${pct(bc('photo'), found)} of found`) +
-    statBox('Specialty', bc('specialty').toLocaleString(), `${pct(bc('specialty'), found)} of found`) +
-    statBox('Treatments', bc('treatments').toLocaleString(), `${pct(bc('treatments'), found)} of found`) +
-    statBox('Fee Assured', bc('feeAssured').toLocaleString(), `${pct(bc('feeAssured'), found)} of found`) +
-    statBox('Platinum', bc('platinum').toLocaleString(), `${pct(bc('platinum'), found)} of found`) +
-    statBox('Open Referral', bc('openReferral').toLocaleString(), `${pct(bc('openReferral'), found)} of found`) +
-    statBox('NH Hospital Link', bc('nuffieldHospitalLink').toLocaleString(), `${pct(bc('nuffieldHospitalLink'), found)} of found`) +
-    statBox('NH Consultant Link', bc('nuffieldConsultantLink').toLocaleString(), `${pct(bc('nuffieldConsultantLink'), found)} of found`) +
-    statBox('Anaesthetists', bc('anaesthetists').toLocaleString(), `${pct(bc('anaesthetists'), found)} of found`) +
+    statBox('Found on BUPA', pct(found, total), `${found.toLocaleString()} of ${total.toLocaleString()}`) +
+    statBox('Photo', pct(bc('photo'), found), `${bc('photo').toLocaleString()} of found`) +
+    statBox('Specialty', pct(bc('specialty'), found), `${bc('specialty').toLocaleString()} of found`) +
+    statBox('Treatments', pct(bc('treatments'), found), `${bc('treatments').toLocaleString()} of found`) +
+    statBox('Fee Assured', pct(bc('feeAssured'), found), `${bc('feeAssured').toLocaleString()} of found`) +
+    statBox('Platinum', pct(bc('platinum'), found), `${bc('platinum').toLocaleString()} of found`) +
+    statBox('Open Referral', pct(bc('openReferral'), found), `${bc('openReferral').toLocaleString()} of found`) +
+    statBox('NH Hospital Link', pct(bc('nuffieldHospitalLink'), found), `${bc('nuffieldHospitalLink').toLocaleString()} of found`) +
+    statBox('NH Consultant Link', pct(bc('nuffieldConsultantLink'), found), `${bc('nuffieldConsultantLink').toLocaleString()} of found`) +
+    statBox('Anaesthetists', pct(bc('anaesthetists'), found), `${bc('anaesthetists').toLocaleString()} of found`) +
     statBox('Avg plain English', `${avgPE}/10`, `of ${found.toLocaleString()} found`);
 }
 
