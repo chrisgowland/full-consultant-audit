@@ -216,7 +216,7 @@ function renderNH(records) {
   tbody.innerHTML = records.map(r => {
     const c = r.nh?.criteria || {};
     const booking = r.nh?.booking;
-    const appts8 = booking?.appointmentsNext8Weeks;
+    const appts8 = booking?.appointmentsNext4Weeks;
     const under12 = appts8 !== null && appts8 !== undefined
       ? badge(appts8 < 12)
       : '<span class="badge badge-na">–</span>';
@@ -297,9 +297,13 @@ function renderNHStats(records) {
   const c = k => records.filter(r => r.nh?.criteria?.[k]).length;
   const pass = records.filter(r => r.nh?.overallPass).length;
   const withBooking = records.filter(r => r.nh?.booking != null).length;
+  const noAppts7d = records.filter(r => {
+    const b = r.nh?.booking;
+    return b && (b.firstAvailableDaysAway === null || b.firstAvailableDaysAway > 7);
+  }).length;
   const under12 = records.filter(r => {
     const b = r.nh?.booking;
-    return b && b.appointmentsNext8Weeks !== null && b.appointmentsNext8Weeks !== undefined && b.appointmentsNext8Weeks < 12;
+    return b && b.appointmentsNext4Weeks !== null && b.appointmentsNext4Weeks !== undefined && b.appointmentsNext4Weeks < 12;
   }).length;
   const avgPE = total
     ? (records.reduce((s, r) => s + (r.nh?.plainEnglishScore || 0), 0) / total).toFixed(1)
@@ -315,8 +319,9 @@ function renderNHStats(records) {
     statBox('Qualifications', c('qualificationsPass').toLocaleString(), pct(c('qualificationsPass'), total)) +
     statBox('GMC Number', c('gmcPass').toLocaleString(), pct(c('gmcPass'), total)) +
     statBox('Book Online', c('bookOnlinePass').toLocaleString(), pct(c('bookOnlinePass'), total)) +
-    statBox('Availability data', withBooking.toLocaleString(), pct(withBooking, total)) +
-    statBox('< 12 appts (8 wk)', under12.toLocaleString(), `${pct(under12, withBooking)} of bookable`) +
+    statBox('In booking system', withBooking.toLocaleString(), pct(withBooking, total)) +
+    statBox('No appts in 7 days', noAppts7d.toLocaleString(), `${pct(noAppts7d, withBooking)} of bookable`) +
+    statBox('< 12 appts (4 wk)', under12.toLocaleString(), `${pct(under12, withBooking)} of bookable`) +
     statBox('Avg plain English', `${avgPE}/5`, `of ${total.toLocaleString()}`);
 }
 

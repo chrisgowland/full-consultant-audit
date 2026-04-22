@@ -65,7 +65,7 @@ async function fetchBookingMetrics(gmcCode, hospitalId, fromDateYmd, apimKey) {
     '&fromDate=' + encodeURIComponent(fromDateYmd) +
     '&gmcCode=' + encodeURIComponent(gmcCode) +
     '&hospitalId=' + encodeURIComponent(hospitalId) +
-    '&sessionDays=56';
+    '&sessionDays=28';
 
   const payload = await fetchBookingJson(url, apimKey);
   const details = payload?.response?.responseData?.bookingDetails;
@@ -73,7 +73,7 @@ async function fetchBookingMetrics(gmcCode, hospitalId, fromDateYmd, apimKey) {
 
   const firstDate = details.length > 0 && details[0].slotDate ? String(details[0].slotDate) : null;
   return {
-    appointmentsNext8Weeks: details.length,
+    appointmentsNext4Weeks: details.length,
     firstAvailableDaysAway: firstDate ? daysBetween(fromDateYmd, firstDate) : null,
   };
 }
@@ -96,13 +96,13 @@ export async function fetchBookingMetricsAcrossHospitals(gmcCode, hospitalEntrie
     } catch (_) { /* ignore per-hospital errors */ }
   }
 
-  const values = Object.values(byHospital).filter(v => Number.isFinite(v?.appointmentsNext8Weeks));
+  const values = Object.values(byHospital).filter(v => Number.isFinite(v?.appointmentsNext4Weeks));
   if (!values.length) return null;
 
-  const appointmentsNext8Weeks = values.reduce((s, v) => s + (v.appointmentsNext8Weeks || 0), 0);
+  const appointmentsNext4Weeks = values.reduce((s, v) => s + (v.appointmentsNext4Weeks || 0), 0);
   const firsts = values.map(v => v.firstAvailableDaysAway).filter(n => Number.isFinite(n) && n >= 0);
   return {
-    appointmentsNext8Weeks,
+    appointmentsNext4Weeks,
     firstAvailableDaysAway: firsts.length ? Math.min(...firsts) : null,
     byHospital,
   };
