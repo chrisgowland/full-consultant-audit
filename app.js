@@ -254,8 +254,9 @@ function renderBUPA(records) {
       ? `<a href="${bupaUrl}" target="_blank" rel="noopener">${esc(r.name)}</a>`
       : esc(r.name);
     const failed = (r.bupa?.failedAspects || []).map(f => `<span class="fix-tag">${esc(f)}</span>`).join('');
-    const otherHospitals = r.bupa?.found && (r.bupa?.hospitalItems || []).length
-      ? truncate(r.bupa.hospitalItems, 2)
+    const nonNuffieldHospitals = (r.bupa?.hospitalItems || []).filter(h => !/nuffield/i.test(h));
+    const otherHospitals = r.bupa?.found && nonNuffieldHospitals.length
+      ? truncate(nonNuffieldHospitals, 2)
       : '<span class="muted">–</span>';
     return `<tr>
       <td>${nameCell} ${r.gmc ? `<span class="gmc">GMC ${r.gmc}</span>` : ''}</td>

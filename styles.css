@@ -71,6 +71,7 @@ tbody tr:nth-child(even) { background: var(--nh-teal-light); }
 tbody tr:hover { background: #dbeef2; }
 td { padding: 5px 5px; border-bottom: 1px solid var(--border); vertical-align: top; }
 td:first-child { min-width: 110px; max-width: 150px; }
+td:nth-child(2) { max-width: 100px; }
 
 /* Badges */
 .badge { display: inline-block; padding: 1px 5px; border-radius: 10px; font-size: .75rem; font-weight: 600; white-space: nowrap; }
