@@ -34,4 +34,5 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/combined.json
           git diff --cached --quiet || git commit -m "chore: update combined.json [skip ci]"
+          git pull --rebase origin main
           git push
