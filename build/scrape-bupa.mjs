@@ -83,12 +83,14 @@ export function parseBupaHtml(html, url = '') {
   // Open Referral
   const openReferral = /is-open-network/i.test(html);
 
-  // Nuffield hospital link
+  // Nuffield hospital link: BUPA uses relative /Hospital/view/.../nuffield_health_... hrefs
   const links = extractLinks(html);
-  const nuffieldHospitalLink = links.some(l => /nuffieldhealth\.com\/hospitals?\//i.test(l));
+  const nuffieldHospitalLink = links.some(l => /\/Hospital\/view\/[^?#]*nuffield/i.test(l)) ||
+    /nuffield\s+health[^<]{0,60}hospital/i.test(html);
 
-  // Nuffield consultant profile link
-  const nuffieldConsultantLink = links.some(l => /nuffieldhealth\.com\/consultants?\//i.test(l));
+  // Nuffield consultant profile link: absolute link back to nuffieldhealth.com/consultants/
+  const nuffieldConsultantLink = links.some(l => /nuffieldhealth\.com\/consultants?\//i.test(l)) ||
+    /nuffieldhealth\.com\/consultants?\//i.test(html);
 
   // Anaesthetists
   const anaesSection = extractSection(html, 'Anaesthetist');

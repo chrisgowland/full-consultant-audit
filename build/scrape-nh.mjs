@@ -134,9 +134,10 @@ export async function parseConsultantProfile(url) {
     }
   });
 
-  // Booking online
-  const bookOnline = /book\s+online|online\s+booking|book\s+appointment/i.test(html) ||
-    $('a[href*="book"], button').filter((_, el) => /book/i.test($(el).text())).length > 0;
+  // Booking online: use the swiftype meta tag <meta name="bookable" content="true/false">
+  const bookableMeta = html.match(/name=["']bookable["'][^>]*content=["']([^"']+)["']/i) ||
+    html.match(/content=["']([^"']+)["'][^>]*name=["']bookable["']/i);
+  const bookOnline = bookableMeta?.[1]?.toLowerCase() === 'true';
 
   return { name, url, gmc, specialties, treatments, qualifications, insurers, aboutText, photoUrl, hospitals, bookOnline };
 }
