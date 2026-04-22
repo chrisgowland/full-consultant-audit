@@ -272,9 +272,9 @@ function renderBUPA(records) {
       <td>${badge(c.platinum)}</td>
       <td>${badge(c.openReferral)}</td>
       <td>${badge(c.nuffieldHospitalLink)}</td>
+      <td>${otherHospitals}</td>
       <td>${badge(c.nuffieldConsultantLink)}</td>
       <td>${badge(c.anaesthetists)}</td>
-      <td>${otherHospitals}</td>
       <td>${r.bupa?.found ? pePlain(r.bupa.plainEnglishScore, 10) : '<span class="badge badge-na">–</span>'}</td>
       <td class="fixes">${failed}</td>
     </tr>`;
