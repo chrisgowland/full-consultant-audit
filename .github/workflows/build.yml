@@ -1,0 +1,37 @@
+name: Build combined.json
+
+on:
+  schedule:
+    - cron: '30 5 * * *'   # 05:30 UTC daily
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: 'Limit number of consultants (0 = all)'
+        default: '0'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run build
+        run: node build/build.mjs --limit ${{ github.event.inputs.limit || '0' }} --workers 8
+
+      - name: Commit updated data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/combined.json
+          git diff --cached --quiet || git commit -m "chore: update combined.json [skip ci]"
+          git push

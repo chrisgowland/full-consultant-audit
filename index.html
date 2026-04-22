@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Consultant Audit — NH.com &amp; BUPA</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <h1>Consultant Audit</h1>
+      <p class="subtitle">Nuffield Health &amp; BUPA profile quality review</p>
+      <div id="meta" class="meta-bar"></div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <!-- Shared filter bar -->
+    <div class="filter-bar">
+      <input type="search" id="search" placeholder="Search consultant name…" autocomplete="off">
+      <select id="filter-specialty"><option value="">All specialties</option></select>
+      <select id="filter-treatment"><option value="">All procedures</option></select>
+      <select id="filter-hospital"><option value="">All hospitals</option></select>
+      <select id="filter-region">
+        <option value="">All regions</option>
+        <option value="North">North</option>
+        <option value="Central">Central</option>
+        <option value="South">South</option>
+      </select>
+      <button id="clear-filters" class="btn-secondary">Clear filters</button>
+    </div>
+
+    <!-- Tabs -->
+    <nav class="tab-nav">
+      <button class="tab-btn active" data-tab="summary">Summary</button>
+      <button class="tab-btn" data-tab="nh">Nuffield Health</button>
+      <button class="tab-btn" data-tab="bupa">BUPA Finder</button>
+    </nav>
+
+    <!-- Tab-specific filters -->
+    <div id="tab-filters-summary" class="tab-filters"></div>
+
+    <div id="tab-filters-nh" class="tab-filters" style="display:none">
+      <select id="filter-nh-result">
+        <option value="">All results</option>
+        <option value="pass">Overall pass</option>
+        <option value="fail">Overall fail</option>
+      </select>
+      <select id="filter-nh-booking">
+        <option value="">Any booking status</option>
+        <option value="bookable">Book online: yes</option>
+        <option value="not_bookable">Book online: no</option>
+      </select>
+    </div>
+
+    <div id="tab-filters-bupa" class="tab-filters" style="display:none">
+      <select id="filter-bupa-found">
+        <option value="">Matched &amp; unmatched</option>
+        <option value="found">Found on BUPA</option>
+        <option value="not_found">Not found on BUPA</option>
+      </select>
+      <select id="filter-bupa-result">
+        <option value="">All core scores</option>
+        <option value="high">7–9 / 9</option>
+        <option value="mid">4–6 / 9</option>
+        <option value="low">0–3 / 9</option>
+      </select>
+    </div>
+
+    <!-- Count -->
+    <div class="results-count" id="results-count"></div>
+
+    <!-- Tables (one per tab, shown/hidden) -->
+    <div class="table-wrap" id="table-summary">
+      <table>
+        <thead>
+          <tr>
+            <th>Consultant</th>
+            <th>Specialty</th>
+            <th>Hospital</th>
+            <th>Region</th>
+            <th>NH Overall</th>
+            <th>BUPA Overall</th>
+            <th>NH Score</th>
+            <th>BUPA Score</th>
+            <th>NH Booking</th>
+            <th>BUPA Found</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-summary"></tbody>
+      </table>
+    </div>
+
+    <div class="table-wrap" id="table-nh" style="display:none">
+      <table>
+        <thead>
+          <tr>
+            <th>Consultant</th>
+            <th>Specialty</th>
+            <th>Hospital</th>
+            <th>Region</th>
+            <th>Overall</th>
+            <th title="Photo">📷</th>
+            <th title="Clinical Terms">Clin.</th>
+            <th title="Specialty">Spec.</th>
+            <th title="Procedures">Proc.</th>
+            <th title="Insurers">Ins.</th>
+            <th title="Qualifications">Qual.</th>
+            <th title="GMC Number">GMC</th>
+            <th title="Book Online">Book</th>
+            <th>Plain English</th>
+            <th>Appts 4wk</th>
+            <th>Days to first</th>
+            <th>Fixes needed</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-nh"></tbody>
+      </table>
+    </div>
+
+    <div class="table-wrap" id="table-bupa" style="display:none">
+      <table>
+        <thead>
+          <tr>
+            <th>Consultant</th>
+            <th>Specialty</th>
+            <th>Hospital</th>
+            <th>Region</th>
+            <th>Found</th>
+            <th>Core Score</th>
+            <th title="Photo">📷</th>
+            <th title="Specialty">Spec.</th>
+            <th title="Treatments">Treat.</th>
+            <th title="Fee Assured">Fee✓</th>
+            <th title="Platinum">Plat.</th>
+            <th title="Open Referral">Open</th>
+            <th title="NH Hospital Link">NH Hosp</th>
+            <th title="NH Consultant Link">NH Link</th>
+            <th title="Anaesthetists">Anaes.</th>
+            <th>Plain English</th>
+            <th>Failed aspects</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-bupa"></tbody>
+      </table>
+    </div>
+
+    <p class="no-results" id="no-results" style="display:none">No consultants match the current filters.</p>
+  </div>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span id="footer-meta"></span>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

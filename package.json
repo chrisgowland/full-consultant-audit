@@ -1,0 +1,15 @@
+{
+  "name": "consultant-audit",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Combined NH.com + BUPA consultant profile audit tool",
+  "scripts": {
+    "build": "node build/build.mjs",
+    "build:sample": "node build/build.mjs --limit 20",
+    "build:single": "node build/build.mjs --url"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "p-limit": "^5.0.0"
+  }
+}

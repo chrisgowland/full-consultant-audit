@@ -1,0 +1,300 @@
+/* global state */
+let allRecords = [];
+let activeTab = 'summary';
+const filters = {
+  search: '',
+  specialty: '',
+  treatment: '',
+  hospital: '',
+  region: '',
+  nhResult: '',
+  nhBooking: '',
+  bupaFound: '',
+  bupaResult: '',
+};
+
+/* ── data loading ── */
+async function loadData() {
+  try {
+    const resp = await fetch('data/combined.json?' + Date.now());
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const json = await resp.json();
+    allRecords = json.records || [];
+    renderMeta(json);
+    populateFilterOptions();
+    render();
+  } catch (e) {
+    document.getElementById('results-count').textContent = 'Failed to load data: ' + e.message;
+  }
+}
+
+function renderMeta(json) {
+  const updated = json.last_updated ? new Date(json.last_updated).toLocaleDateString('en-GB', {
+    day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  }) : 'unknown';
+  document.getElementById('meta').innerHTML =
+    `<span>${(json.total || 0).toLocaleString()} consultants</span>` +
+    `<span>NH pass rate: <strong>${json.nhPassRate || '–'}</strong></span>` +
+    `<span>BUPA match rate: <strong>${json.bupaFoundRate || '–'}</strong></span>` +
+    `<span>Updated: ${updated}</span>`;
+  document.getElementById('footer-meta').textContent =
+    `Last updated ${updated} · ${json.build_duration_seconds || '?'}s build`;
+}
+
+/* ── filter options ── */
+function populateFilterOptions() {
+  const specialties = new Set();
+  const treatments = new Set();
+  const hospitals = new Set();
+
+  for (const r of allRecords) {
+    (r.specialties || []).forEach(s => specialties.add(s));
+    (r.treatments || []).forEach(t => treatments.add(t));
+    (r.hospitals || []).forEach(h => hospitals.add(h));
+  }
+
+  fillSelect('filter-specialty', [...specialties].sort());
+  fillSelect('filter-treatment', [...treatments].sort());
+  fillSelect('filter-hospital', [...hospitals].sort());
+}
+
+function fillSelect(id, options) {
+  const sel = document.getElementById(id);
+  const first = sel.options[0];
+  sel.innerHTML = '';
+  sel.appendChild(first);
+  for (const opt of options) {
+    const el = document.createElement('option');
+    el.value = opt;
+    el.textContent = opt;
+    sel.appendChild(el);
+  }
+}
+
+/* ── filtering ── */
+function filterRecords() {
+  const q = filters.search.toLowerCase();
+  return allRecords.filter(r => {
+    if (q && !r.name.toLowerCase().includes(q)) return false;
+    if (filters.specialty && !(r.specialties || []).includes(filters.specialty)) return false;
+    if (filters.treatment && !(r.treatments || []).includes(filters.treatment)) return false;
+    if (filters.hospital && !(r.hospitals || []).includes(filters.hospital)) return false;
+    if (filters.region && r.region !== filters.region) return false;
+
+    if (activeTab === 'nh' || activeTab === 'summary') {
+      if (filters.nhResult === 'pass' && !r.nh?.overallPass) return false;
+      if (filters.nhResult === 'fail' && r.nh?.overallPass) return false;
+      if (filters.nhBooking === 'bookable' && !r.nh?.criteria?.bookOnlinePass) return false;
+      if (filters.nhBooking === 'not_bookable' && r.nh?.criteria?.bookOnlinePass) return false;
+    }
+
+    if (activeTab === 'bupa' || activeTab === 'summary') {
+      if (filters.bupaFound === 'found' && !r.bupa?.found) return false;
+      if (filters.bupaFound === 'not_found' && r.bupa?.found) return false;
+      if (filters.bupaResult) {
+        const score = parseInt(r.bupa?.coreScore || '0', 10);
+        if (filters.bupaResult === 'high' && score < 7) return false;
+        if (filters.bupaResult === 'mid' && (score < 4 || score > 6)) return false;
+        if (filters.bupaResult === 'low' && score > 3) return false;
+      }
+    }
+
+    return true;
+  });
+}
+
+/* ── rendering ── */
+function render() {
+  const records = filterRecords();
+  document.getElementById('results-count').textContent =
+    `${records.length.toLocaleString()} consultant${records.length !== 1 ? 's' : ''}`;
+  document.getElementById('no-results').style.display = records.length ? 'none' : '';
+
+  if (activeTab === 'summary') renderSummary(records);
+  if (activeTab === 'nh') renderNH(records);
+  if (activeTab === 'bupa') renderBUPA(records);
+}
+
+function badge(val, trueLabel = '✓', falseLabel = '✗') {
+  if (val === null || val === undefined) return '<span class="badge badge-na">–</span>';
+  return val
+    ? `<span class="badge badge-pass">${trueLabel}</span>`
+    : `<span class="badge badge-fail">${falseLabel}</span>`;
+}
+
+function overallBadge(nhPass, bupaFound, bupaScore) {
+  if (!bupaFound) return nhPass
+    ? '<span class="badge badge-pass">NH✓</span> <span class="badge badge-na">–</span>'
+    : '<span class="badge badge-fail">NH✗</span> <span class="badge badge-na">–</span>';
+  const b = parseInt(bupaScore || '0', 10) >= 7;
+  if (nhPass && b) return '<span class="badge badge-pass">NH✓</span> <span class="badge badge-pass">B✓</span>';
+  if (nhPass || b) return `<span class="badge ${nhPass ? 'badge-pass' : 'badge-fail'}">${nhPass ? 'NH✓' : 'NH✗'}</span> <span class="badge ${b ? 'badge-pass' : 'badge-fail'}">${b ? 'B✓' : 'B✗'}</span>`;
+  return '<span class="badge badge-fail">NH✗</span> <span class="badge badge-fail">B✗</span>';
+}
+
+function scoreBar(score, max) {
+  const n = parseInt(score, 10) || 0;
+  const pct = max ? Math.round((n / max) * 100) : 0;
+  const cls = pct >= 78 ? 'bar-high' : pct >= 44 ? 'bar-mid' : 'bar-low';
+  return `<span class="score-bar ${cls}" title="${score}/${max}">${score}/${max}</span>`;
+}
+
+function pePlain(score, max) {
+  if (score === null || score === undefined) return '<span class="badge badge-na">–</span>';
+  const cls = score >= max * 0.6 ? 'badge-pass' : score >= max * 0.3 ? 'badge-amber' : 'badge-fail';
+  return `<span class="badge ${cls}">${score}/${max}</span>`;
+}
+
+function nhScoreCount(criteria) {
+  if (!criteria) return '?/8';
+  const keys = ['photoPass', 'clinicalTermsPass', 'specialtyPass', 'proceduresPass',
+    'insurersPass', 'qualificationsPass', 'gmcPass', 'bookOnlinePass'];
+  const passed = keys.filter(k => criteria[k]).length;
+  return `${passed}/8`;
+}
+
+function truncate(arr, n = 2) {
+  if (!arr || !arr.length) return '<span class="muted">None</span>';
+  const shown = arr.slice(0, n).join(', ');
+  return arr.length > n ? `${shown} <span class="muted">+${arr.length - n}</span>` : shown;
+}
+
+function consultantLink(r) {
+  const nhUrl = r.nh?.url;
+  const nameHtml = nhUrl ? `<a href="${nhUrl}" target="_blank" rel="noopener">${esc(r.name)}</a>` : esc(r.name);
+  const gmc = r.gmc ? `<span class="gmc">GMC ${r.gmc}</span>` : '';
+  return nameHtml + gmc;
+}
+
+function esc(str) {
+  return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/* ── Summary tab ── */
+function renderSummary(records) {
+  const tbody = document.getElementById('tbody-summary');
+  tbody.innerHTML = records.map(r => {
+    const nhPass = r.nh?.overallPass;
+    const bupaFound = r.bupa?.found;
+    const bupaScore = r.bupa?.coreScore || '–';
+    const nhBooking = r.nh?.booking;
+    const appts = nhBooking ? nhBooking.appointmentsNext4Weeks : null;
+    const days = nhBooking ? nhBooking.firstAvailableDaysAway : null;
+
+    const bupaOverall = bupaFound
+      ? (parseInt(r.bupa.coreScore, 10) >= 7
+        ? '<span class="badge badge-pass">✓</span>'
+        : '<span class="badge badge-fail">✗</span>')
+      : '<span class="badge badge-na">–</span>';
+
+    return `<tr>
+      <td>${consultantLink(r)}</td>
+      <td>${truncate(r.specialties, 2)}</td>
+      <td>${truncate(r.hospitals, 1)}</td>
+      <td><span class="region region-${(r.region || '').toLowerCase()}">${r.region || '–'}</span></td>
+      <td>${badge(nhPass)}</td>
+      <td>${bupaOverall}</td>
+      <td>${scoreBar(nhScoreCount(r.nh?.criteria).split('/')[0], 8)}</td>
+      <td>${bupaFound ? scoreBar(bupaScore.split('/')[0], 9) : '<span class="badge badge-na">–</span>'}</td>
+      <td>${appts !== null ? appts : '<span class="muted">–</span>'}</td>
+      <td>${badge(bupaFound)}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ── NH tab ── */
+function renderNH(records) {
+  const tbody = document.getElementById('tbody-nh');
+  tbody.innerHTML = records.map(r => {
+    const c = r.nh?.criteria || {};
+    const booking = r.nh?.booking;
+    return `<tr>
+      <td>${consultantLink(r)}</td>
+      <td>${truncate(r.specialties, 2)}</td>
+      <td>${truncate(r.hospitals, 1)}</td>
+      <td><span class="region region-${(r.region || '').toLowerCase()}">${r.region || '–'}</span></td>
+      <td>${badge(r.nh?.overallPass)}</td>
+      <td>${badge(c.photoPass)}</td>
+      <td>${badge(c.clinicalTermsPass)}</td>
+      <td>${badge(c.specialtyPass)}</td>
+      <td>${badge(c.proceduresPass)}</td>
+      <td>${badge(c.insurersPass)}</td>
+      <td>${badge(c.qualificationsPass)}</td>
+      <td>${badge(c.gmcPass)}</td>
+      <td>${badge(c.bookOnlinePass)}</td>
+      <td>${pePlain(r.nh?.plainEnglishScore, 5)}</td>
+      <td>${booking?.appointmentsNext4Weeks !== undefined ? booking.appointmentsNext4Weeks : '<span class="muted">–</span>'}</td>
+      <td>${booking?.firstAvailableDaysAway !== undefined ? booking.firstAvailableDaysAway + 'd' : '<span class="muted">–</span>'}</td>
+      <td class="fixes">${(r.nh?.fixes || []).map(f => `<span class="fix-tag">${esc(f)}</span>`).join('')}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ── BUPA tab ── */
+function renderBUPA(records) {
+  const tbody = document.getElementById('tbody-bupa');
+  tbody.innerHTML = records.map(r => {
+    const c = r.bupa?.criteria || {};
+    const bupaUrl = r.bupa?.url;
+    const nameCell = bupaUrl
+      ? `<a href="${bupaUrl}" target="_blank" rel="noopener">${esc(r.name)}</a>`
+      : esc(r.name);
+    const failed = (r.bupa?.failedAspects || []).map(f => `<span class="fix-tag">${esc(f)}</span>`).join('');
+    return `<tr>
+      <td>${nameCell} ${r.gmc ? `<span class="gmc">GMC ${r.gmc}</span>` : ''}</td>
+      <td>${truncate(r.specialties, 2)}</td>
+      <td>${truncate(r.hospitals, 1)}</td>
+      <td><span class="region region-${(r.region || '').toLowerCase()}">${r.region || '–'}</span></td>
+      <td>${badge(r.bupa?.found, 'Found', 'Not found')}</td>
+      <td>${r.bupa?.found ? scoreBar(r.bupa.coreScore.split('/')[0], 9) : '<span class="badge badge-na">–</span>'}</td>
+      <td>${badge(c.photo)}</td>
+      <td>${badge(c.specialty)}</td>
+      <td>${badge(c.treatments)}</td>
+      <td>${badge(c.feeAssured)}</td>
+      <td>${badge(c.platinum)}</td>
+      <td>${badge(c.openReferral)}</td>
+      <td>${badge(c.nuffieldHospitalLink)}</td>
+      <td>${badge(c.nuffieldConsultantLink)}</td>
+      <td>${badge(c.anaesthetists)}</td>
+      <td>${r.bupa?.found ? pePlain(r.bupa.plainEnglishScore, 10) : '<span class="badge badge-na">–</span>'}</td>
+      <td class="fixes">${failed}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ── tab switching ── */
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  ['summary', 'nh', 'bupa'].forEach(t => {
+    document.getElementById(`table-${t}`).style.display = t === tab ? '' : 'none';
+    const tf = document.getElementById(`tab-filters-${t}`);
+    if (tf) tf.style.display = t === tab ? '' : 'none';
+  });
+  render();
+}
+
+/* ── event wiring ── */
+function wire() {
+  document.getElementById('search').addEventListener('input', e => { filters.search = e.target.value; render(); });
+  document.getElementById('filter-specialty').addEventListener('change', e => { filters.specialty = e.target.value; render(); });
+  document.getElementById('filter-treatment').addEventListener('change', e => { filters.treatment = e.target.value; render(); });
+  document.getElementById('filter-hospital').addEventListener('change', e => { filters.hospital = e.target.value; render(); });
+  document.getElementById('filter-region').addEventListener('change', e => { filters.region = e.target.value; render(); });
+
+  document.getElementById('filter-nh-result').addEventListener('change', e => { filters.nhResult = e.target.value; render(); });
+  document.getElementById('filter-nh-booking').addEventListener('change', e => { filters.nhBooking = e.target.value; render(); });
+  document.getElementById('filter-bupa-found').addEventListener('change', e => { filters.bupaFound = e.target.value; render(); });
+  document.getElementById('filter-bupa-result').addEventListener('change', e => { filters.bupaResult = e.target.value; render(); });
+
+  document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+
+  document.getElementById('clear-filters').addEventListener('click', () => {
+    Object.keys(filters).forEach(k => { filters[k] = ''; });
+    document.querySelectorAll('select, input[type=search]').forEach(el => { el.value = ''; });
+    render();
+  });
+}
+
+wire();
+loadData();
