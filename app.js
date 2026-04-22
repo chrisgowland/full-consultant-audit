@@ -314,8 +314,8 @@ function renderNHStats(records) {
     statBox('Overall pass', pct(pass, total), `${pass.toLocaleString()} of ${total.toLocaleString()}`) +
     statBox('Photo', pct(c('photoPass'), total), c('photoPass').toLocaleString()) +
     statBox('Clinical Terms', pct(c('clinicalTermsPass'), total), c('clinicalTermsPass').toLocaleString()) +
-    statBox('Specialty', pct(c('specialtyPass'), total), c('specialtyPass').toLocaleString()) +
-    statBox('Procedures', pct(c('proceduresPass'), total), c('proceduresPass').toLocaleString()) +
+    statBox('Specialty clear', pct(c('specialtyPass'), total), c('specialtyPass').toLocaleString()) +
+    statBox('Procedures specified', pct(c('proceduresPass'), total), c('proceduresPass').toLocaleString()) +
     statBox('Insurers', pct(c('insurersPass'), total), c('insurersPass').toLocaleString()) +
     statBox('Qualifications', pct(c('qualificationsPass'), total), c('qualificationsPass').toLocaleString()) +
     statBox('GMC Number', pct(c('gmcPass'), total), c('gmcPass').toLocaleString()) +
