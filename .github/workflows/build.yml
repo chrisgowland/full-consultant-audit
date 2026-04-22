@@ -2,7 +2,7 @@ name: Build combined.json
 
 on:
   schedule:
-    - cron: '30 5 * * *'   # 05:30 UTC daily
+    - cron: '0 5 * * 1'    # 05:00 UTC every Monday
   workflow_dispatch:
     inputs:
       limit:
