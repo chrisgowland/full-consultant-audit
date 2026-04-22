@@ -26,7 +26,7 @@ export function scoreBUPA(bupaData) {
   const {
     photo, specialty, treatments, feeAssured, platinum,
     openReferral, nuffieldHospitalLink, nuffieldConsultantLink,
-    anaesthetists, aboutText, url,
+    anaesthetists, aboutText, url, hospitalItems,
   } = bupaData;
 
   const criteria = {
@@ -58,5 +58,6 @@ export function scoreBUPA(bupaData) {
     plainEnglishScore,
     plainEnglishPass,
     failedAspects,
+    hospitalItems: hospitalItems || [],
   };
 }

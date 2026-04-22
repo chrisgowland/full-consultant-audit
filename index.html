@@ -72,6 +72,8 @@
     <div class="results-count" id="results-count"></div>
 
     <!-- Tables (one per tab, shown/hidden) -->
+    <div id="stats-summary" class="stat-boxes"></div>
+
     <div class="table-wrap" id="table-summary">
       <table>
         <thead>
@@ -84,7 +86,6 @@
             <th>BUPA Overall</th>
             <th>NH Score</th>
             <th>BUPA Score</th>
-            <th>NH Booking</th>
             <th>BUPA Found</th>
           </tr>
         </thead>
@@ -103,17 +104,18 @@
             <th>Hospital</th>
             <th>Region</th>
             <th>Overall</th>
-            <th title="Photo">📷</th>
-            <th title="Clinical Terms">Clin.</th>
-            <th title="Specialty">Spec.</th>
-            <th title="Procedures">Proc.</th>
-            <th title="Insurers">Ins.</th>
-            <th title="Qualifications">Qual.</th>
-            <th title="GMC Number">GMC</th>
-            <th title="Book Online">Book</th>
+            <th>Photo</th>
+            <th>Clinical Terms</th>
+            <th>Specialty</th>
+            <th>Procedures</th>
+            <th>Insurers</th>
+            <th>Qualifications</th>
+            <th>GMC Number</th>
+            <th>Book Online</th>
             <th>Plain English</th>
-            <th>Appts 4wk</th>
-            <th>Days to first</th>
+            <th>Appointments (8 wk)</th>
+            <th>Days to first appt</th>
+            <th>&lt; 12 appts (8 wk)</th>
             <th>Fixes needed</th>
           </tr>
         </thead>
@@ -133,17 +135,18 @@
             <th>Region</th>
             <th>Found</th>
             <th>Core Score</th>
-            <th title="Photo">📷</th>
-            <th title="Specialty">Spec.</th>
-            <th title="Treatments">Treat.</th>
-            <th title="Fee Assured">Fee✓</th>
-            <th title="Platinum">Plat.</th>
-            <th title="Open Referral">Open</th>
-            <th title="NH Hospital Link">NH Hosp</th>
-            <th title="NH Consultant Link">NH Link</th>
-            <th title="Anaesthetists">Anaes.</th>
+            <th>Photo</th>
+            <th>Specialty</th>
+            <th>Treatments</th>
+            <th>Fee Assured</th>
+            <th>Platinum</th>
+            <th>Open Referral</th>
+            <th>NH Hospital Link</th>
+            <th>NH Consultant Link</th>
+            <th>Anaesthetists</th>
+            <th>Other Hospitals</th>
             <th>Plain English</th>
-            <th>Failed aspects</th>
+            <th>Failed Aspects</th>
           </tr>
         </thead>
         <tbody id="tbody-bupa"></tbody>

@@ -95,13 +95,9 @@ function computeStats(records) {
   }
 
   const withBooking = records.filter(r => r.nh.booking !== null);
-  const noAppts7d = records.filter(r => {
+  const under12in8wk = records.filter(r => {
     const b = r.nh.booking;
-    return !b || b.firstAvailableDaysAway === null || b.firstAvailableDaysAway > 7;
-  }).length;
-  const under12in4wk = records.filter(r => {
-    const b = r.nh.booking;
-    return !b || (b.appointmentsNext4Weeks !== null && b.appointmentsNext4Weeks < 12);
+    return b && b.appointmentsNext8Weeks !== null && b.appointmentsNext8Weeks < 12;
   }).length;
 
   return {
@@ -117,10 +113,8 @@ function computeStats(records) {
       : 0,
     bookingStats: {
       withBookingData: withBooking.length,
-      noAppts7dCount: noAppts7d,
-      noAppts7dRate: total ? ((noAppts7d / total) * 100).toFixed(1) + '%' : '0%',
-      under12in4wkCount: under12in4wk,
-      under12in4wkRate: total ? ((under12in4wk / total) * 100).toFixed(1) + '%' : '0%',
+      under12in8wkCount: under12in8wk,
+      under12in8wkRate: withBooking.length ? ((under12in8wk / withBooking.length) * 100).toFixed(1) + '%' : '0%',
     },
   };
 }

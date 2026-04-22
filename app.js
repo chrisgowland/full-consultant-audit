@@ -110,7 +110,7 @@ function render() {
     `${records.length.toLocaleString()} consultant${records.length !== 1 ? 's' : ''}`;
   document.getElementById('no-results').style.display = records.length ? 'none' : '';
 
-  if (activeTab === 'summary') renderSummary(records);
+  if (activeTab === 'summary') { renderSummary(records); renderSummaryStats(records); }
   if (activeTab === 'nh') { renderNH(records); renderNHStats(records); }
   if (activeTab === 'bupa') { renderBUPA(records); renderBUPAStats(records); }
 }
@@ -171,15 +171,24 @@ function esc(str) {
 }
 
 /* ── Summary tab ── */
+function renderSummaryStats(records) {
+  const total = records.length;
+  const nhPass = records.filter(r => r.nh?.overallPass).length;
+  const bupaFound = records.filter(r => r.bupa?.found).length;
+  const bupaPass = records.filter(r => r.bupa?.found && parseInt(r.bupa?.coreScore, 10) >= 7).length;
+
+  document.getElementById('stats-summary').innerHTML =
+    statBox('Consultants', total.toLocaleString(), '') +
+    statBox('Nuffield Health pass', nhPass.toLocaleString(), `${pct(nhPass, total)} of ${total.toLocaleString()}`) +
+    statBox('BUPA pass (≥ 7/9)', bupaPass.toLocaleString(), `${pct(bupaPass, bupaFound)} of ${bupaFound.toLocaleString()} found`);
+}
+
 function renderSummary(records) {
   const tbody = document.getElementById('tbody-summary');
   tbody.innerHTML = records.map(r => {
     const nhPass = r.nh?.overallPass;
     const bupaFound = r.bupa?.found;
     const bupaScore = r.bupa?.coreScore || '–';
-    const nhBooking = r.nh?.booking;
-    const appts = nhBooking ? nhBooking.appointmentsNext4Weeks : null;
-    const days = nhBooking ? nhBooking.firstAvailableDaysAway : null;
 
     const bupaOverall = bupaFound
       ? (parseInt(r.bupa.coreScore, 10) >= 7
@@ -196,7 +205,6 @@ function renderSummary(records) {
       <td>${bupaOverall}</td>
       <td>${scoreBar(nhScoreCount(r.nh?.criteria).split('/')[0], 8)}</td>
       <td>${bupaFound ? scoreBar(bupaScore.split('/')[0], 9) : '<span class="badge badge-na">–</span>'}</td>
-      <td>${appts !== null ? appts : '<span class="muted">–</span>'}</td>
       <td>${badge(bupaFound)}</td>
     </tr>`;
   }).join('');
@@ -208,6 +216,10 @@ function renderNH(records) {
   tbody.innerHTML = records.map(r => {
     const c = r.nh?.criteria || {};
     const booking = r.nh?.booking;
+    const appts8 = booking?.appointmentsNext8Weeks;
+    const under12 = appts8 !== null && appts8 !== undefined
+      ? badge(appts8 < 12)
+      : '<span class="badge badge-na">–</span>';
     return `<tr>
       <td>${consultantLink(r)}</td>
       <td>${truncate(r.specialties, 2)}</td>
@@ -223,8 +235,9 @@ function renderNH(records) {
       <td>${badge(c.gmcPass)}</td>
       <td>${badge(c.bookOnlinePass)}</td>
       <td>${pePlain(r.nh?.plainEnglishScore, 5)}</td>
-      <td>${booking?.appointmentsNext4Weeks !== undefined ? booking.appointmentsNext4Weeks : '<span class="muted">–</span>'}</td>
-      <td>${booking?.firstAvailableDaysAway !== undefined ? booking.firstAvailableDaysAway + 'd' : '<span class="muted">–</span>'}</td>
+      <td>${appts8 !== null && appts8 !== undefined ? appts8 : '<span class="muted">–</span>'}</td>
+      <td>${booking?.firstAvailableDaysAway !== null && booking?.firstAvailableDaysAway !== undefined ? booking.firstAvailableDaysAway + 'd' : '<span class="muted">–</span>'}</td>
+      <td>${under12}</td>
       <td class="fixes">${(r.nh?.fixes || []).map(f => `<span class="fix-tag">${esc(f)}</span>`).join('')}</td>
     </tr>`;
   }).join('');
@@ -240,6 +253,9 @@ function renderBUPA(records) {
       ? `<a href="${bupaUrl}" target="_blank" rel="noopener">${esc(r.name)}</a>`
       : esc(r.name);
     const failed = (r.bupa?.failedAspects || []).map(f => `<span class="fix-tag">${esc(f)}</span>`).join('');
+    const otherHospitals = r.bupa?.found && (r.bupa?.hospitalItems || []).length
+      ? truncate(r.bupa.hospitalItems, 2)
+      : '<span class="muted">–</span>';
     return `<tr>
       <td>${nameCell} ${r.gmc ? `<span class="gmc">GMC ${r.gmc}</span>` : ''}</td>
       <td>${truncate(r.specialties, 2)}</td>
@@ -256,6 +272,7 @@ function renderBUPA(records) {
       <td>${badge(c.nuffieldHospitalLink)}</td>
       <td>${badge(c.nuffieldConsultantLink)}</td>
       <td>${badge(c.anaesthetists)}</td>
+      <td>${otherHospitals}</td>
       <td>${r.bupa?.found ? pePlain(r.bupa.plainEnglishScore, 10) : '<span class="badge badge-na">–</span>'}</td>
       <td class="fixes">${failed}</td>
     </tr>`;
@@ -277,50 +294,52 @@ function statBox(label, value, sub) {
 
 function renderNHStats(records) {
   const total = records.length;
+  const c = k => records.filter(r => r.nh?.criteria?.[k]).length;
   const pass = records.filter(r => r.nh?.overallPass).length;
-  const bookOnline = records.filter(r => r.nh?.criteria?.bookOnlinePass).length;
   const withBooking = records.filter(r => r.nh?.booking != null).length;
-  const noAppts7d = records.filter(r => {
+  const under12 = records.filter(r => {
     const b = r.nh?.booking;
-    return !b || b.firstAvailableDaysAway === null || b.firstAvailableDaysAway > 7;
-  }).length;
-  const apptAvail = records.filter(r => {
-    const b = r.nh?.booking;
-    return b && b.firstAvailableDaysAway !== null && b.firstAvailableDaysAway <= 7;
+    return b && b.appointmentsNext8Weeks !== null && b.appointmentsNext8Weeks !== undefined && b.appointmentsNext8Weeks < 12;
   }).length;
   const avgPE = total
     ? (records.reduce((s, r) => s + (r.nh?.plainEnglishScore || 0), 0) / total).toFixed(1)
     : '–';
 
   document.getElementById('stats-nh').innerHTML =
-    statBox('Overall pass', `${pass.toLocaleString()}`, `${pct(pass, total)} of ${total.toLocaleString()}`) +
-    statBox('Book online', `${bookOnline.toLocaleString()}`, pct(bookOnline, total)) +
-    statBox('Availability data', `${withBooking.toLocaleString()}`, pct(withBooking, total)) +
-    statBox('Appt within 7 days', `${apptAvail.toLocaleString()}`, pct(apptAvail, total)) +
-    statBox('No appt in 7 days', `${noAppts7d.toLocaleString()}`, pct(noAppts7d, total)) +
+    statBox('Overall pass', pass.toLocaleString(), `${pct(pass, total)} of ${total.toLocaleString()}`) +
+    statBox('Photo', c('photoPass').toLocaleString(), pct(c('photoPass'), total)) +
+    statBox('Clinical Terms', c('clinicalTermsPass').toLocaleString(), pct(c('clinicalTermsPass'), total)) +
+    statBox('Specialty', c('specialtyPass').toLocaleString(), pct(c('specialtyPass'), total)) +
+    statBox('Procedures', c('proceduresPass').toLocaleString(), pct(c('proceduresPass'), total)) +
+    statBox('Insurers', c('insurersPass').toLocaleString(), pct(c('insurersPass'), total)) +
+    statBox('Qualifications', c('qualificationsPass').toLocaleString(), pct(c('qualificationsPass'), total)) +
+    statBox('GMC Number', c('gmcPass').toLocaleString(), pct(c('gmcPass'), total)) +
+    statBox('Book Online', c('bookOnlinePass').toLocaleString(), pct(c('bookOnlinePass'), total)) +
+    statBox('Availability data', withBooking.toLocaleString(), pct(withBooking, total)) +
+    statBox('< 12 appts (8 wk)', under12.toLocaleString(), `${pct(under12, withBooking)} of bookable`) +
     statBox('Avg plain English', `${avgPE}/5`, `of ${total.toLocaleString()}`);
 }
 
 function renderBUPAStats(records) {
   const total = records.length;
   const found = records.filter(r => r.bupa?.found).length;
-  const feeAssured = records.filter(r => r.bupa?.found && r.bupa?.criteria?.feeAssured).length;
-  const platinum = records.filter(r => r.bupa?.found && r.bupa?.criteria?.platinum).length;
-  const openReferral = records.filter(r => r.bupa?.found && r.bupa?.criteria?.openReferral).length;
-  const nhHospLink = records.filter(r => r.bupa?.found && r.bupa?.criteria?.nuffieldHospitalLink).length;
-  const nhConsLink = records.filter(r => r.bupa?.found && r.bupa?.criteria?.nuffieldConsultantLink).length;
+  const bc = k => records.filter(r => r.bupa?.found && r.bupa?.criteria?.[k]).length;
   const avgPE = found
     ? (records.filter(r => r.bupa?.found)
         .reduce((s, r) => s + (r.bupa?.plainEnglishScore || 0), 0) / found).toFixed(1)
     : '–';
 
   document.getElementById('stats-bupa').innerHTML =
-    statBox('Found on BUPA', `${found.toLocaleString()}`, `${pct(found, total)} of ${total.toLocaleString()}`) +
-    statBox('Fee Assured', `${feeAssured.toLocaleString()}`, `${pct(feeAssured, found)} of found`) +
-    statBox('Platinum', `${platinum.toLocaleString()}`, `${pct(platinum, found)} of found`) +
-    statBox('Open Referral', `${openReferral.toLocaleString()}`, `${pct(openReferral, found)} of found`) +
-    statBox('NH Hospital link', `${nhHospLink.toLocaleString()}`, `${pct(nhHospLink, found)} of found`) +
-    statBox('NH Consultant link', `${nhConsLink.toLocaleString()}`, `${pct(nhConsLink, found)} of found`) +
+    statBox('Found on BUPA', found.toLocaleString(), `${pct(found, total)} of ${total.toLocaleString()}`) +
+    statBox('Photo', bc('photo').toLocaleString(), `${pct(bc('photo'), found)} of found`) +
+    statBox('Specialty', bc('specialty').toLocaleString(), `${pct(bc('specialty'), found)} of found`) +
+    statBox('Treatments', bc('treatments').toLocaleString(), `${pct(bc('treatments'), found)} of found`) +
+    statBox('Fee Assured', bc('feeAssured').toLocaleString(), `${pct(bc('feeAssured'), found)} of found`) +
+    statBox('Platinum', bc('platinum').toLocaleString(), `${pct(bc('platinum'), found)} of found`) +
+    statBox('Open Referral', bc('openReferral').toLocaleString(), `${pct(bc('openReferral'), found)} of found`) +
+    statBox('NH Hospital Link', bc('nuffieldHospitalLink').toLocaleString(), `${pct(bc('nuffieldHospitalLink'), found)} of found`) +
+    statBox('NH Consultant Link', bc('nuffieldConsultantLink').toLocaleString(), `${pct(bc('nuffieldConsultantLink'), found)} of found`) +
+    statBox('Anaesthetists', bc('anaesthetists').toLocaleString(), `${pct(bc('anaesthetists'), found)} of found`) +
     statBox('Avg plain English', `${avgPE}/10`, `of ${found.toLocaleString()} found`);
 }
 
