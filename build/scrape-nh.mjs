@@ -139,7 +139,18 @@ export async function parseConsultantProfile(url) {
     html.match(/content=["']([^"']+)["'][^>]*name=["']bookable["']/i);
   const bookOnline = bookableMeta?.[1]?.toLowerCase() === 'true';
 
-  return { name, url, gmc, specialties, treatments, qualifications, insurers, aboutText, photoUrl, hospitals, bookOnline };
+  // Hospital entries for booking API: <meta class="swiftype" name="hospitals" data-type="string" content='{"id":"...","title":"..."}'>
+  const hospitalEntries = [];
+  const hospMetaRe = /name=["']hospitals["'][^>]*content='([^']+)'/gi;
+  let hm;
+  while ((hm = hospMetaRe.exec(html)) !== null) {
+    try {
+      const parsed = JSON.parse(hm[1]);
+      if (parsed?.id) hospitalEntries.push({ id: String(parsed.id).trim(), title: String(parsed.title || '').trim() });
+    } catch (_) { /* skip malformed */ }
+  }
+
+  return { name, url, gmc, specialties, treatments, qualifications, insurers, aboutText, photoUrl, hospitals, bookOnline, hospitalEntries };
 }
 
 export function isExcluded(consultant) {

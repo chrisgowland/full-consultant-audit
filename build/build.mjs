@@ -10,8 +10,12 @@ import { buildBupaIndex, matchConsultantToBupa } from './match-bupa.mjs';
 import { fetchBupaProfile } from './scrape-bupa.mjs';
 import { scoreBUPA } from './score-bupa.mjs';
 import { getRegion } from './regions.mjs';
+import { fetchBookingMetricsAcrossHospitals } from './fetch-booking.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Public APIM key from the booking microsite bundle; override via BOOKING_APIM_KEY env var
+const APIM_KEY = process.env.BOOKING_APIM_KEY || '882ee8ab406042dd9da8045dc58874a3';
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -24,7 +28,7 @@ function parseArgs() {
   return opts;
 }
 
-async function processConsultant(url, bupaIndex) {
+async function processConsultant(url, bupaIndex, fromDateYmd) {
   // 1. Fetch + parse NH profile
   const nhRaw = await parseConsultantProfile(url);
   if (!nhRaw || !nhRaw.name) return null;
@@ -32,10 +36,15 @@ async function processConsultant(url, bupaIndex) {
   // 2. Score NH criteria
   const nhScore = scoreNH(nhRaw);
 
-  // 3. Match to BUPA
+  // 3. Fetch booking availability (uses hospitalEntries extracted from Swiftype meta)
+  const booking = await fetchBookingMetricsAcrossHospitals(
+    nhRaw.gmc, nhRaw.hospitalEntries || [], fromDateYmd, APIM_KEY
+  );
+
+  // 4. Match to BUPA
   const bupaMatch = matchConsultantToBupa(nhRaw.name, bupaIndex);
 
-  // 4. Fetch + score BUPA profile
+  // 5. Fetch + score BUPA profile
   let bupaResult;
   if (bupaMatch) {
     const bupaRaw = await fetchBupaProfile(bupaMatch.url);
@@ -44,9 +53,6 @@ async function processConsultant(url, bupaIndex) {
     bupaResult = scoreBUPA(null);
   }
 
-  // 5. Derive shared metadata
-  const hospitals = nhRaw.hospitals.length ? nhRaw.hospitals :
-    (bupaResult.found ? bupaResult.criteria && [] : []);
   const region = getRegion(nhRaw.hospitals);
 
   return {
@@ -62,7 +68,7 @@ async function processConsultant(url, bupaIndex) {
       criteria: nhScore.criteria,
       plainEnglishScore: nhScore.plainEnglishScore,
       fixes: nhScore.fixes,
-      booking: null, // populated by booking API when available
+      booking,
     },
     bupa: bupaResult,
   };
@@ -88,6 +94,16 @@ function computeStats(records) {
     bupaRates[k] = records.filter(r => r.bupa.found && r.bupa.criteria[k]).length;
   }
 
+  const withBooking = records.filter(r => r.nh.booking !== null);
+  const noAppts7d = records.filter(r => {
+    const b = r.nh.booking;
+    return !b || b.firstAvailableDaysAway === null || b.firstAvailableDaysAway > 7;
+  }).length;
+  const under12in4wk = records.filter(r => {
+    const b = r.nh.booking;
+    return !b || (b.appointmentsNext4Weeks !== null && b.appointmentsNext4Weeks < 12);
+  }).length;
+
   return {
     total,
     nhPass,
@@ -99,6 +115,13 @@ function computeStats(records) {
     avgNhPlainEnglish: records.length
       ? (records.reduce((s, r) => s + (r.nh.plainEnglishScore || 0), 0) / records.length).toFixed(2)
       : 0,
+    bookingStats: {
+      withBookingData: withBooking.length,
+      noAppts7dCount: noAppts7d,
+      noAppts7dRate: total ? ((noAppts7d / total) * 100).toFixed(1) + '%' : '0%',
+      under12in4wkCount: under12in4wk,
+      under12in4wkRate: total ? ((under12in4wk / total) * 100).toFixed(1) + '%' : '0%',
+    },
   };
 }
 
@@ -123,6 +146,7 @@ async function main() {
   const bupaIndex = await buildBupaIndex();
 
   // 3. Process all consultants
+  const fromDateYmd = new Date().toISOString().split('T')[0];
   console.log(`\n[3/4] Processing ${urls.length} consultants (${opts.workers} workers)...`);
   const limit = pLimit(opts.workers);
   const results = [];
@@ -130,7 +154,7 @@ async function main() {
   let excluded = 0;
 
   const tasks = urls.map(url => limit(async () => {
-    const result = await processConsultant(url, bupaIndex);
+    const result = await processConsultant(url, bupaIndex, fromDateYmd);
     done++;
     if (done % 50 === 0 || done === urls.length) {
       process.stdout.write(`  Progress: ${done}/${urls.length} (${excluded} excluded)\r`);

@@ -111,8 +111,8 @@ function render() {
   document.getElementById('no-results').style.display = records.length ? 'none' : '';
 
   if (activeTab === 'summary') renderSummary(records);
-  if (activeTab === 'nh') renderNH(records);
-  if (activeTab === 'bupa') renderBUPA(records);
+  if (activeTab === 'nh') { renderNH(records); renderNHStats(records); }
+  if (activeTab === 'bupa') { renderBUPA(records); renderBUPAStats(records); }
 }
 
 function badge(val, trueLabel = '✓', falseLabel = '✗') {
@@ -262,6 +262,68 @@ function renderBUPA(records) {
   }).join('');
 }
 
+/* ── stat boxes ── */
+function pct(n, d) {
+  return d ? ((n / d) * 100).toFixed(0) + '%' : '–';
+}
+
+function statBox(label, value, sub) {
+  return `<div class="stat-box">
+    <div class="stat-value">${value}</div>
+    <div class="stat-label">${label}</div>
+    ${sub ? `<div class="stat-sub">${sub}</div>` : ''}
+  </div>`;
+}
+
+function renderNHStats(records) {
+  const total = records.length;
+  const pass = records.filter(r => r.nh?.overallPass).length;
+  const bookOnline = records.filter(r => r.nh?.criteria?.bookOnlinePass).length;
+  const withBooking = records.filter(r => r.nh?.booking != null).length;
+  const noAppts7d = records.filter(r => {
+    const b = r.nh?.booking;
+    return !b || b.firstAvailableDaysAway === null || b.firstAvailableDaysAway > 7;
+  }).length;
+  const apptAvail = records.filter(r => {
+    const b = r.nh?.booking;
+    return b && b.firstAvailableDaysAway !== null && b.firstAvailableDaysAway <= 7;
+  }).length;
+  const avgPE = total
+    ? (records.reduce((s, r) => s + (r.nh?.plainEnglishScore || 0), 0) / total).toFixed(1)
+    : '–';
+
+  document.getElementById('stats-nh').innerHTML =
+    statBox('Overall pass', `${pass.toLocaleString()}`, `${pct(pass, total)} of ${total.toLocaleString()}`) +
+    statBox('Book online', `${bookOnline.toLocaleString()}`, pct(bookOnline, total)) +
+    statBox('Availability data', `${withBooking.toLocaleString()}`, pct(withBooking, total)) +
+    statBox('Appt within 7 days', `${apptAvail.toLocaleString()}`, pct(apptAvail, total)) +
+    statBox('No appt in 7 days', `${noAppts7d.toLocaleString()}`, pct(noAppts7d, total)) +
+    statBox('Avg plain English', `${avgPE}/5`, `of ${total.toLocaleString()}`);
+}
+
+function renderBUPAStats(records) {
+  const total = records.length;
+  const found = records.filter(r => r.bupa?.found).length;
+  const feeAssured = records.filter(r => r.bupa?.found && r.bupa?.criteria?.feeAssured).length;
+  const platinum = records.filter(r => r.bupa?.found && r.bupa?.criteria?.platinum).length;
+  const openReferral = records.filter(r => r.bupa?.found && r.bupa?.criteria?.openReferral).length;
+  const nhHospLink = records.filter(r => r.bupa?.found && r.bupa?.criteria?.nuffieldHospitalLink).length;
+  const nhConsLink = records.filter(r => r.bupa?.found && r.bupa?.criteria?.nuffieldConsultantLink).length;
+  const avgPE = found
+    ? (records.filter(r => r.bupa?.found)
+        .reduce((s, r) => s + (r.bupa?.plainEnglishScore || 0), 0) / found).toFixed(1)
+    : '–';
+
+  document.getElementById('stats-bupa').innerHTML =
+    statBox('Found on BUPA', `${found.toLocaleString()}`, `${pct(found, total)} of ${total.toLocaleString()}`) +
+    statBox('Fee Assured', `${feeAssured.toLocaleString()}`, `${pct(feeAssured, found)} of found`) +
+    statBox('Platinum', `${platinum.toLocaleString()}`, `${pct(platinum, found)} of found`) +
+    statBox('Open Referral', `${openReferral.toLocaleString()}`, `${pct(openReferral, found)} of found`) +
+    statBox('NH Hospital link', `${nhHospLink.toLocaleString()}`, `${pct(nhHospLink, found)} of found`) +
+    statBox('NH Consultant link', `${nhConsLink.toLocaleString()}`, `${pct(nhConsLink, found)} of found`) +
+    statBox('Avg plain English', `${avgPE}/10`, `of ${found.toLocaleString()} found`);
+}
+
 /* ── tab switching ── */
 function switchTab(tab) {
   activeTab = tab;
@@ -270,6 +332,8 @@ function switchTab(tab) {
     document.getElementById(`table-${t}`).style.display = t === tab ? '' : 'none';
     const tf = document.getElementById(`tab-filters-${t}`);
     if (tf) tf.style.display = t === tab ? '' : 'none';
+    const sb = document.getElementById(`stats-${t}`);
+    if (sb) sb.style.display = t === tab ? '' : 'none';
   });
   render();
 }
